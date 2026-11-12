@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#020304">
+<title>وردة ليكي</title>
+<style>
+:root{color-scheme:dark;--red:#ff365d;--green:#55ec8b}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020304;color:#eee;font-family:Tahoma,Arial,sans-serif}
+body{background:radial-gradient(ellipse at 50% 34%,#10070b 0%,#060507 46%,#020304 82%)}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block}
+.topline{position:fixed;top:max(15px,env(safe-area-inset-top));left:0;right:0;text-align:center;pointer-events:none;color:#c5aeb4;font:10px/1.5 ui-monospace,Consolas,monospace;letter-spacing:2px;opacity:.82}
+.bottom-note{position:fixed;bottom:max(13px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#c9bdc1;font:10px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1.5px;pointer-events:none}
+.bottom-note span{color:#fff;text-shadow:0 0 10px #fff}
+.music-btn{position:fixed;top:max(45px,calc(env(safe-area-inset-top) + 42px));left:50%;transform:translateX(-50%);z-index:4;border:1px solid rgba(255,255,255,.27);border-radius:30px;background:rgba(10,10,13,.84);color:#f8e9ed;padding:9px 16px;font-size:12px;box-shadow:0 0 18px rgba(255,255,255,.07);cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap}
+.music-btn.playing{border-color:rgba(255,110,135,.7);color:#ffdbe2;box-shadow:0 0 24px rgba(255,50,90,.2)}
+.music-hint{position:fixed;top:max(88px,calc(env(safe-area-inset-top) + 84px));left:0;right:0;text-align:center;z-index:3;color:rgba(255,230,235,.55);font:10px Tahoma,Arial,sans-serif;pointer-events:none}
+.open-letter{position:fixed;z-index:4;left:50%;bottom:max(54px,calc(env(safe-area-inset-bottom) + 46px));transform:translateX(-50%) translateY(12px);opacity:0;pointer-events:none;border:1px solid rgba(255,100,125,.65);border-radius:999px;background:rgba(18,7,11,.92);color:#ffe7eb;padding:12px 23px;font-size:14px;box-shadow:0 0 24px rgba(255,40,82,.2);transition:opacity 1.5s ease,transform 1.5s ease;cursor:pointer;white-space:nowrap}
+.open-letter.visible{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.letter-wrap{position:fixed;z-index:6;inset:0;display:grid;place-items:center;padding:22px;background:rgba(0,0,0,.78);backdrop-filter:blur(9px);opacity:0;visibility:hidden;transition:opacity .8s ease,visibility .8s}
+.letter-wrap.show{opacity:1;visibility:visible}
+.letter{width:min(430px,100%);padding:30px 25px 26px;border:1px solid rgba(255,126,145,.42);border-radius:19px;background:linear-gradient(145deg,rgba(30,11,17,.98),rgba(7,7,10,.99));box-shadow:0 0 55px rgba(255,35,78,.17);text-align:center;transform:translateY(18px);transition:transform .8s ease}
+.letter-wrap.show .letter{transform:translateY(0)}
+.letter .rose{font-size:28px;color:#ff6a83;text-shadow:0 0 18px #ff254f}
+.letter h1{font-size:21px;font-weight:500;color:#ffdce2;margin:12px 0 18px}
+.letter p{font-size:15px;line-height:2.05;color:#e8dadd;margin:0 0 12px}
+.letter .sign{color:#ff9cad;margin-top:18px}
+.close{margin-top:15px;padding:8px 18px;border-radius:20px;border:1px solid rgba(255,130,150,.4);background:transparent;color:#f5dce1;font-size:13px;cursor:pointer}
+/* The YouTube player stays alive off-screen; playback is still subject to browser autoplay rules. */
+#ytPlayer{position:fixed;width:200px;height:200px;left:-220px;top:-220px;opacity:.01;pointer-events:none}
+@media(max-width:520px){.topline{font-size:9px}.letter{padding:25px 19px}.letter p{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.open-letter,.letter-wrap,.letter{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="وردة حمراء مرسومة بحروف ورموز متحركة"></canvas>
+<div class="topline">A ROSE, GROWN LINE BY LINE <span id="timer">00:00</span></div>
+<button id="musicButton" class="music-btn" type="button">♫ محاولة تشغيل الأغنية</button>
+<div class="music-hint" id="musicHint">الصوت قد يحتاج لمسة واحدة للسماح بالتشغيل</div>
+<div id="ytPlayer"></div>
+<div class="bottom-note">developer: <span>sa</span></div>
+<button id="openLetter" class="open-letter" type="button">افتحي جوابك</button>
+<div id="letterWrap" class="letter-wrap" role="dialog" aria-modal="true" aria-labelledby="letterTitle">
+  <div class="letter">
+    <div class="rose">✿</div>
+    <h1 id="letterTitle">إلى أجمل حد في حياتي</h1>
+    <p>يمكن الوردة دي مرسومة بحروف وكود، بس معناها أكبر من كل الكلام. حبيت أعملك حاجة مختلفة، حاجة تفضل تفكّرك إنك مميزة عندي، وإن وجودك بيخلّي الأيام العادية أحلى.</p>
+    <p>أتمنى أفضل دايمًا سبب في ابتسامتك، وأفضل أشوفك مبسوطة ومرتاحة. كل تفصيلة حلوة فيكي تستاهل وردة، ودي أول واحدة.</p>
+    <p class="sign">من قلبي ليكي ❤️</p>
+    <button id="closeLetter" class="close" type="button">إغلاق</button>
+  </div>
+</div>
+<script>
+(()=>{
+'use strict';
+const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d');
+const timerEl=document.getElementById('timer'),letterButton=document.getElementById('openLetter');
+const letterWrap=document.getElementById('letterWrap'),closeLetter=document.getElementById('closeLetter');
+const musicButton=document.getElementById('musicButton'),musicHint=document.getElementById('musicHint');
+const VIDEO_ID='_K6o-pEay-0',GROW_MS=44000,START=performance.now();
+let W=0,H=0,DPR=1,CW=7,CH=12,COLS=0,ROWS=0,stars=[],player=null,playerReady=false,musicUnlocked=false,letterShown=false;
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const smooth=(a,b,v)=>{const x=clamp((v-a)/(b-a));return x*x*(3-2*x)};
+const hash=(x,y)=>{let n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n)};
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;
+  canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const fs=Math.max(7,Math.min(11,W/72));ctx.font=`${fs}px "Courier New",monospace`;CW=fs*.62;CH=fs*1.18;
+  COLS=Math.ceil(W/CW);ROWS=Math.ceil(H/CH);
+  stars=Array.from({length:Math.max(65,Math.floor(W*H/4400))},()=>({x:Math.random()*W,y:Math.random()*H,r:.35+Math.random()*1.25,p:Math.random()*Math.PI*2,s:.45+Math.random()*1.2,sp:Math.random()>.84}));
+}
+window.addEventListener('resize',resize,{passive:true});resize();
+
+// Each ring is a layer of individual ASCII petals. They start close together as a bud,
+// then spread out in stages so the bloom visibly opens rather than staying a solid oval.
+const rings=[
+  {count:8,r:.365,rx:.325,ry:.47,delay:.00,phase:0,shade:0},
+  {count:6,r:.225,rx:.265,ry:.375,delay:.10,phase:.28,shade:1},
+  {count:5,r:.105,rx:.185,ry:.285,delay:.20,phase:.58,shade:2}
+];
+function ellipseValue(x,y,cx,cy,rx,ry,a){
+  const dx=x-cx,dy=y-cy,c=Math.cos(a),s=Math.sin(a),xx=dx*c+dy*s,yy=-dx*s+dy*c;
+  return (xx/rx)**2+(yy/ry)**2;
+}
+function roseCell(nx,ny,opening){
+  let best=Infinity,selected=null,edge=false;
+  // Tight central bud, which shrinks as the inner spiral petals separate.
+  const bud=ellipseValue(nx,ny,0,.02,.115*(1-.18*opening),.20*(1-.12*opening),0);
+  if(bud<best){best=bud;selected={ring:3,index:0};}
+  rings.forEach((ring,ri)=>{
+    const local=smooth(ring.delay,ring.delay+.72,opening);
+    for(let i=0;i<ring.count;i++){
+      const angle=(Math.PI*2*i/ring.count)+ring.phase;
+      const radius=ring.r*(.025+.975*local);
+      const cx=Math.cos(angle)*radius,cy=Math.sin(angle)*radius*.86;
+      const size=.19+.81*local;
+      const rx=ring.rx*size,ry=ring.ry*size;
+      const q=ellipseValue(nx,ny,cx,cy,rx,ry,angle+Math.PI/2);
+      if(q<best){best=q;selected={ring:ri,index:i};}
+    }
+  });
+  if(best>1||!selected)return null;
+  edge=best>.79;
+  return {edge,ring:selected.ring,index:selected.index,depth:best};
+}
+
+function drawLeaf(rootX,rootY,angle,length,progress,seed){
+  if(progress<=.005)return;
+  const grow=.04+.96*smooth(0,1,progress),L=length*grow,w=L*.34;
+  ctx.save();ctx.translate(rootX,rootY);ctx.rotate(angle);
+  const leafPath=()=>{ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(L*.22,-w*.96,L*.72,-w*.92,L,0);ctx.bezierCurveTo(L*.72,w*.86,L*.28,w*.75,0,0);ctx.closePath();};
+  leafPath();
+  const grad=ctx.createLinearGradient(0,-w,L,w);
+  grad.addColorStop(0,'rgba(17,105,49,.98)');grad.addColorStop(.48,'rgba(43,184,82,.98)');grad.addColorStop(1,'rgba(106,235,126,.96)');
+  ctx.globalAlpha=.98;ctx.fillStyle=grad;ctx.shadowColor='#43f183';ctx.shadowBlur=18;ctx.fill();ctx.shadowBlur=0;
+  ctx.save();leafPath();ctx.clip();
+  // Fine code-like texture stays subtle so the shape still reads as a real leaf.
+  ctx.font='9px "Courier New",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  const glyph='·:;+*';
+  for(let xx=10;xx<L-4;xx+=12){
+    const curve=Math.sin((xx/L)*Math.PI)*w*.47;
+    for(let yy=-curve;yy<curve;yy+=12){
+      const n=hash(Math.floor(xx)+seed,Math.floor(yy)+seed*7);
+      ctx.fillStyle=n>.55?'rgba(219,255,212,.78)':'rgba(2,70,28,.72)';
+      ctx.fillText(glyph[Math.floor(n*glyph.length)],xx,yy);
+    }
+  }
+  ctx.restore();
+  // Central vein and fine veins, with a soft pale-green highlight.
+  ctx.strokeStyle='rgba(222,255,220,.94)';ctx.lineWidth=1.45;ctx.beginPath();ctx.moveTo(2,0);ctx.quadraticCurveTo(L*.5,-w*.02,L,0);ctx.stroke();
+  ctx.strokeStyle='rgba(195,255,202,.68)';ctx.lineWidth=.8;
+  for(let k=1;k<=6;k++){
+    const x=L*k/7,curve=Math.sin((x/L)*Math.PI)*w*.48;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.quadraticCurveTo(x-L*.07,-curve*.7,x-L*.17,-curve);ctx.moveTo(x,0);ctx.quadraticCurveTo(x-L*.06,curve*.65,x-L*.17,curve);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawStem(cx,baseY,topY,progress,t){
+  if(progress<=.001)return;
+  const visibleY=baseY-(baseY-topY)*progress;
+  const sway=Math.sin(t*.00018)*Math.min(5,W*.009);
+  const xAt=y=>cx+sway*Math.sin(((baseY-y)/(baseY-topY))*1.35);
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+  const path=()=>{ctx.beginPath();let first=true;for(let i=0;i<=60;i++){const f=i/60,y=baseY-(baseY-visibleY)*f,x=xAt(y);if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y);}};
+  path();ctx.strokeStyle='rgba(28,131,63,.72)';ctx.lineWidth=8;ctx.shadowColor='#37e879';ctx.shadowBlur=15;ctx.stroke();ctx.shadowBlur=0;
+  path();ctx.strokeStyle='rgba(80,221,115,.95)';ctx.lineWidth=3.7;ctx.stroke();
+  path();ctx.strokeStyle='rgba(191,255,190,.6)';ctx.lineWidth=.9;ctx.stroke();
+  ctx.font=`${Math.max(8,Math.min(12,W/66))}px "Courier New",monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+  for(let i=0;i<58;i++){
+    const f=i/58,y=baseY-(baseY-visibleY)*f,x=xAt(y),n=hash(i,12);
+    ctx.globalAlpha=.55+n*.42;ctx.fillStyle=n>.6?'#b7ffc2':'#45df7c';ctx.shadowColor='#43ef80';ctx.shadowBlur=5;
+    ctx.fillText(['|','!','/','\\',';','¦'][Math.floor(n*6)],x+(n-.5)*5,y);
+  }
+  ctx.restore();return {xAt,sway};
+}
+
+function drawCalyx(cx,cy,amount){
+  if(amount<=0)return;
+  ctx.save();ctx.translate(cx,cy);ctx.globalAlpha=amount;ctx.shadowColor='#49f184';ctx.shadowBlur=12;
+  for(let i=0;i<5;i++){
+    const a=-Math.PI*.94+i*(Math.PI*.88/4),len=19;
+    ctx.save();ctx.rotate(a);ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-5,-len*.55,0,-len);ctx.quadraticCurveTo(7,-len*.47,0,0);ctx.fillStyle='#269c52';ctx.fill();ctx.strokeStyle='#a5ffb5';ctx.lineWidth=.8;ctx.stroke();ctx.restore();
+  }
+  ctx.restore();
+}
+
+function draw(t){
+  const p=clamp(t/GROW_MS),stemProgress=smooth(.015,.48,p);
+  const leavesLeft=smooth(.18,.53,p),leavesRight=smooth(.32,.67,p),leavesSmall=smooth(.53,.78,p);
+  const visibility=smooth(.20,.48,p),opening=smooth(.48,.96,p);
+  const cx=W*.5,flowerY=H*.245,fw=Math.min(W*.82,390),fh=Math.min(H*.34,260);
+  ctx.clearRect(0,0,W,H);
+  const bg=ctx.createRadialGradient(cx,flowerY,3,cx,flowerY,Math.max(W,H)*.64);
+  bg.addColorStop(0,'rgba(90,5,24,.22)');bg.addColorStop(.48,'rgba(28,4,13,.13)');bg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Small white stars with independent, slow twinkle and occasional cross-shaped glints.
+  for(const s of stars){
+    const tw=.14+.82*(.5+.5*Math.sin(t*.00105*s.s+s.p));ctx.globalAlpha=tw;ctx.fillStyle='#fff';
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+    if(s.sp){const len=2.5+s.r*5*(.45+.55*Math.sin(t*.0012+s.p));ctx.strokeStyle='#fff';ctx.lineWidth=.65;ctx.globalAlpha=tw*.88;ctx.beginPath();ctx.moveTo(s.x-len,s.y);ctx.lineTo(s.x+len,s.y);ctx.moveTo(s.x,s.y-len);ctx.lineTo(s.x,s.y+len);ctx.stroke();}
+  }
+  ctx.globalAlpha=1;
+  const baseY=H*.93,attachY=flowerY+fh*.39,stemTop=baseY-(baseY-attachY)*stemProgress;
+  const stemInfo=drawStem(cx,baseY,attachY,stemProgress,t);
+  const sway=stemInfo?stemInfo.sway:0;
+  const leafX=cx+sway;
+  // Bigger leaves, staggered along the longer stem. The blades are broad and veined.
+  drawLeaf(leafX,baseY-(baseY-attachY)*.43,Math.PI+.43,Math.min(W*.31,235),leavesLeft,11);
+  drawLeaf(leafX,baseY-(baseY-attachY)*.62,-.46,Math.min(W*.29,220),leavesRight,23);
+  drawLeaf(leafX,baseY-(baseY-attachY)*.76,Math.PI+.56,Math.min(W*.16,122),leavesSmall,37);
+  // A little green calyx joins the stem to the blossom.
+  drawCalyx(cx,attachY+3,visibility);
+
+  // Blossom opens in separate rings from the compact bud into a full red ASCII rose.
+  if(visibility>.001){
+    const reveal=smooth(.20,.92,p);
+    const halo=ctx.createRadialGradient(cx,flowerY,fh*.06,cx,flowerY,fw*.82);
+    halo.addColorStop(0,`rgba(255,35,72,${.13*visibility+.06*opening})`);
+    halo.addColorStop(.52,`rgba(255,19,54,${.065*visibility})`);halo.addColorStop(1,'rgba(255,0,30,0)');
+    ctx.fillStyle=halo;ctx.fillRect(cx-fw,flowerY-fh,fw*2,fh*2);
+    ctx.font=`${Math.max(7,Math.min(11,W/72))}px "Courier New",monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+    const glyphs='@%#*+=-:;';
+    for(let row=0;row<ROWS;row++){
+      const y=row*CH,ny=(y-flowerY)/(fh*.5);if(Math.abs(ny)>1.22)continue;
+      for(let col=0;col<COLS;col++){
+        const x=col*CW,nx=(x-cx)/(fw*.5);if(Math.abs(nx)>1.22)continue;
+        const cell=roseCell(nx,ny,opening);if(!cell)continue;
+        const n=hash(col+41,row+29);if(n>reveal)continue;
+        const edge=cell.edge,ring=cell.ring;
+        let ch;
+        if(edge)ch=['(',')','/','\\','[',']'][Math.floor(hash(col,row+8)*6)];
+        else if(ring===3)ch=['@','%','#','*'][Math.floor(n*4)];
+        else ch=glyphs[Math.floor(hash(col*2+3,row*3+1)*glyphs.length)];
+        const core=1-Math.min(1,Math.hypot(nx,ny));
+        const red=Math.floor(166+core*82+(2-ring)*3),green=Math.floor(10+core*24+(ring===2?9:0)),blue=Math.floor(34+core*43);
+        ctx.globalAlpha=.74+.26*visibility;ctx.fillStyle=`rgb(${red},${green},${blue})`;
+        ctx.shadowColor='#ff315b';ctx.shadowBlur=(edge?4:7)+opening*10;
+        ctx.fillText(ch,x,y);
+      }
+    }
+    ctx.globalAlpha=1;ctx.shadowBlur=0;
+    // A delicate central spiral makes the open flower read as a rose, not a round bud.
+    const spiralAlpha=smooth(.69,.97,p);ctx.globalAlpha=spiralAlpha;
+    ctx.textAlign='center';ctx.fillStyle='#ff9aaa';ctx.shadowColor='#ff315b';ctx.shadowBlur=16;
+    ctx.font=`bold ${Math.max(12,Math.min(20,W/25))}px "Courier New",monospace`;
+    ctx.fillText('@',cx,flowerY+2);ctx.globalAlpha=1;ctx.shadowBlur=0;
+  }
+  // Floating sparkles near the bloom.
+  for(let i=0;i<24;i++){
+    const phase=(t*.000022+i*.139)%1,x=cx+Math.sin(i*8.7+phase*4)*fw*.93,y=flowerY+fh*.75-phase*fh*2.05;
+    const a=(.12+.34*(.5+.5*Math.sin(t*.001+i*1.7)))*visibility;
+    ctx.globalAlpha=a;ctx.fillStyle=i%3===0?'#fff':'#ff6682';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=11;ctx.fillText(i%3===0?'✦':'.',x,y);
+  }
+  ctx.globalAlpha=1;ctx.shadowBlur=0;
+  ctx.textAlign='left';ctx.font='10px ui-monospace,Consolas,monospace';ctx.fillStyle='rgba(255,190,200,.58)';ctx.fillText(`bloom ${(opening*100).toFixed(0)}%`,12,H-20);
+}
+function frame(now){
+  const elapsed=now-START;draw(elapsed);const seconds=Math.floor(elapsed/1000);
+  timerEl.textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+  if(elapsed>GROW_MS+1800&&!letterShown){letterButton.classList.add('visible');letterShown=true;}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// YouTube's official player is used so the supplied Short can repeat. Browsers block
+// audible autoplay on many devices; we try on entry and unlock sound on the first touch.
+function setMusicStatus(text,playing=false){musicButton.textContent=text;musicButton.classList.toggle('playing',playing);}
+function playAndUnmute(){
+  if(!playerReady||!player)return false;
+  try{player.unMute();player.setVolume(75);player.playVideo();musicUnlocked=true;setMusicStatus('♫ الأغنية شغّالة',true);musicHint.textContent='';return true;}catch(e){return false;}
+}
+function onYouTubeIframeAPIReady(){
+  player=new YT.Player('ytPlayer',{
+    width:'200',height:'200',videoId:VIDEO_ID,
+    playerVars:{autoplay:1,controls:0,playsinline:1,loop:1,playlist:VIDEO_ID,rel:0,disablekb:1,fs:0,iv_load_policy:3},
+    events:{
+      onReady:(event)=>{playerReady=true;try{event.target.setVolume(70);event.target.playVideo();}catch(e){}setMusicStatus('♫ اضغطي لتفعيل الصوت');},
+      onStateChange:(event)=>{if(event.data===0){try{event.target.seekTo(0,true);event.target.playVideo();}catch(e){}}if(event.data===1&&musicUnlocked)setMusicStatus('♫ الأغنية شغّالة',true);},
+      onError:()=>{setMusicStatus('♫ افتحي الأغنية على يوتيوب');musicHint.textContent='الفيديو لا يسمح بالتشغيل داخل الموقع';}
+    }
+  });
+}
+window.onYouTubeIframeAPIReady=onYouTubeIframeAPIReady;
+const ytScript=document.createElement('script');ytScript.src='https://www.youtube.com/iframe_api';ytScript.async=true;document.head.appendChild(ytScript);
+function unlockOnFirstGesture(){if(playerReady&&!musicUnlocked)playAndUnmute();}
+document.addEventListener('pointerdown',unlockOnFirstGesture,{once:true,passive:true});
+document.addEventListener('keydown',unlockOnFirstGesture,{once:true});
+musicButton.addEventListener('click',()=>{
+  if(playAndUnmute())return;
+  window.open(`https://www.youtube.com/shorts/${VIDEO_ID}`,'_blank','noopener');
+});
+letterButton.addEventListener('click',()=>letterWrap.classList.add('show'));
+closeLetter.addEventListener('click',()=>letterWrap.classList.remove('show'));
+letterWrap.addEventListener('click',e=>{if(e.target===letterWrap)letterWrap.classList.remove('show')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')letterWrap.classList.remove('show')});
+})();
+</script>
+</body>
+</html>
